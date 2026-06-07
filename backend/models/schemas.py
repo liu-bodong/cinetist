@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import BaseModel
 
 
@@ -26,3 +27,20 @@ class MovieProfile(BaseModel):
     fps: float
     shot_count: int
     shots: list[Shot]
+
+
+class JobStatus(str, Enum):
+    PENDING = "pending"
+    DETECTING_SHOTS = "detecting_shots"
+    EXTRACTING_COLORS = "extracting_colors"
+    DONE = "done"
+    ERROR = "error"
+
+
+class Job(BaseModel):
+    id: str
+    status: JobStatus
+    progress: float = 0.0
+    filename: str | None = None
+    result: MovieProfile | None = None
+    error: str | None = None

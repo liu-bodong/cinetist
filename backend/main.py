@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from .processing.pipeline import process_video
-from .models.schemas import MovieProfile
+from . import jobs
+from .models.schemas import Job
 
 app = FastAPI(title="Cinetist")
 
@@ -21,14 +21,19 @@ class AnalyzeRequest(BaseModel):
     threshold: float = 27.0
 
 
-@app.post("/analyze", response_model=MovieProfile)
+@app.post("/analyze", response_model=Job)
 async def analyze(req: AnalyzeRequest):
-    try:
-        return process_video(req.path, n_colors=req.n_colors, threshold=req.threshold)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"File not found: {req.path}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if not req.path:
+        raise HTTPException(status_code=400, detail="Path is required")
+    return jobs.start_analysis(req.path, n_colors=req.n_colors, threshold=req.threshold)
+
+
+@app.get("/jobs/{job_id}", response_model=Job)
+async def get_job(job_id: str):
+    job = jobs.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 @app.get("/health")
